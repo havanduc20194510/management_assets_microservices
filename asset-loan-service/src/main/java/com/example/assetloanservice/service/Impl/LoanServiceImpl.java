@@ -154,6 +154,7 @@ public class LoanServiceImpl implements LoanService {
             Loans loan = loansMapper.toEntity(order);
             // Chú ý: Bạn cần tạo danh sách LoanDetails sau khi đã có đối tượng Loans
             loan.setDetails(createDetailsList(loan, order.getDetails()));
+            loan.setStatus(LoanStatus.PENDING);
             String result = apiClient.validateQuantity(getLoanQuantity(loan.getDetails()));
 
             if (result == null) {
