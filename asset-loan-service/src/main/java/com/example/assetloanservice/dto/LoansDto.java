@@ -1,23 +1,22 @@
 package com.example.assetloanservice.dto;
 
 import com.example.assetloanservice.Enum.LoanStatus;
-import lombok.*;
+import lombok.Value;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.List;
 
 /**
  * DTO for {@link com.example.assetloanservice.entity.Loans}
  */
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Value
 public class LoansDto implements Serializable {
+    Long id;
     String username;
-    String assetCode;
     Date startDate;
     Date dueDate;
     Date returnDate;
     LoanStatus status;
+    List<LoanDetailsDto> details;
 }

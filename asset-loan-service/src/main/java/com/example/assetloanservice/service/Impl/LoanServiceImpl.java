@@ -2,10 +2,14 @@ package com.example.assetloanservice.service.Impl;
 
 import com.example.assetloanservice.Enum.LoanStatus;
 import com.example.assetloanservice.dto.APIResponseDTO;
-import com.example.assetloanservice.dto.HardwareDto;
+import com.example.assetloanservice.dto.LoanDetailsDto;
+import com.example.assetloanservice.dto.LoanResponseDto;
 import com.example.assetloanservice.dto.LoansDto;
+import com.example.assetloanservice.entity.LoanDetails;
 import com.example.assetloanservice.entity.Loans;
+import com.example.assetloanservice.mapper.Details.LoanDetailsMapper;
 import com.example.assetloanservice.mapper.LoansMapper;
+import com.example.assetloanservice.repository.LoanDetailsRepository;
 import com.example.assetloanservice.repository.LoansRepository;
 import com.example.assetloanservice.service.APIClient;
 import com.example.assetloanservice.service.LoanService;
@@ -17,26 +21,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
 public class LoanServiceImpl implements LoanService {
+    private LoanDetailsRepository loanDetailsRepository;
     private LoansRepository loansRepository;
     private LoansMapper loansMapper;
     private APIClient apiClient;
+    private LoanDetailsMapper detailsMapper;
 
 
     @Override
-    public APIResponseDTO getLoanDetails(Long loanId) {
-        Optional<Loans> loan = loansRepository.findById(loanId);
-        LoansDto loansDto = loansMapper.toDto(loan.get());
-//        AssetDTO assetDTO = apiClient.getAssetDTO(loansDto.getAssetCode());
-        HardwareDto hardwareDto = apiClient.getHardwareDto(loansDto.getAssetCode());
+    public APIResponseDTO getInfo(Long loansId) {
+        Loans loans = loansRepository.findById(loansId).get();
+        List<LoanDetails> details = loanDetailsRepository.findByLoansId(loans.getId());
+        loans.setDetails(details);
+        LoansDto dto = loansMapper.toDto(loans);
         APIResponseDTO responseDTO = new APIResponseDTO();
-        responseDTO.setLoans(loansDto);
-        responseDTO.setHardware(hardwareDto);
+        responseDTO.setLoans(dto);
         return responseDTO;
     }
 
@@ -74,27 +81,104 @@ public class LoanServiceImpl implements LoanService {
         return "Order rejected";
     }
 
-
-
+    @Override
+    public String rejectAll() {
+        loansRepository.findAll().stream()
+                .filter(loans -> loans.getStatus().equals(LoanStatus.PENDING))
+                .forEach(loan -> {
+                    loan.setStatus(LoanStatus.REJECTED);
+                    loansRepository.save(loan);
+                });
+        return "REJECTED ALL";
+    }
+    // admin side only
 
     /*
-    check trước khi tạo đơn nếu số lượng hardware = 0 thì cảnh báo, một người không thể
-    mượn quá 2 hardware
+    user side only
+    người dùng tạo đơn mượn, người dùng có thể xem đơn mượn của mình, đơn nào được duyệt và đơn nào bị từ chối
+    tạo một đơn mượn
      */
 
-//    public String checkLoan(LoansDto loansDto, Principal principal) {
-//        HardwareDto hardwareDto = apiClient.getHardwareDto(loansDto.getAssetCode());
-//        if (hardwareDto.getQuantity() == 0) {
-//            return "The product is out of stock";
-//        } else {
-//
-//        }
-//
-//    }
-//
-//    private Boolean createAnOrder(LoansDto loansDto) {
-//        Loans loans = loansMapper.toEntity(loansDto);
-//        loansMapper.toDto(loansRepository.save(loans));
-//        return true;
-//    }
+    /* approve Order
+    kiểm tra số lượng sản phẩm
+    xác thực người dùng : có thể dùng Principal
+    đạt đủ điều kiện thì phê duyệt
+     */
+
+    // method lấy ra sp kèm số lượng trong đơn
+    Map<String, Integer> getLoanQuantity(List<LoanDetails> detailsList) {
+        Map<String, Integer> loanQuantityMap = new HashMap<>();
+        for (LoanDetails details : detailsList) {
+            String assetCode = details.getAssetCode();
+            int quantity = details.getQuantity();
+
+            if (!loanQuantityMap.containsKey(assetCode)) {
+                loanQuantityMap.put(assetCode, quantity);
+            } else {
+                int currentQuantity = loanQuantityMap.get(assetCode);
+                loanQuantityMap.put(assetCode, currentQuantity + quantity);
+            }
+        }
+        return loanQuantityMap;
+    }
+    /*
+    @Override
+    public LoanResponseDto createAnOrder(LoansDto order) {
+        try {
+            Loans loan = loansMapper.toEntity(order);
+            List<LoanDetails> detailsList = createDetailsList(order.getDetails());
+            String result = apiClient.validateQuantity(getLoanQuantity(detailsList));
+            LoanResponseDto dto = new LoanResponseDto();
+            if (result == null) {
+                loan.setDetails(detailsList);
+                loansRepository.save(loan);
+                dto.setMessage("thanh cong");
+                dto.setSuccess(true);
+            } else {
+                dto.setMessage(result);
+                dto.setSuccess(false);
+            }
+            return dto;
+        } catch (Exception e) {
+            LoanResponseDto dto = new LoanResponseDto();
+            dto.setMessage(e.getMessage());
+            dto.setSuccess(false);
+            return dto;
+        }
+    }
+    */
+    @Override
+    public LoanResponseDto createAnOrder(LoansDto order) {
+        LoanResponseDto dto = new LoanResponseDto();
+        try {
+            Loans loan = loansMapper.toEntity(order);
+            // Chú ý: Bạn cần tạo danh sách LoanDetails sau khi đã có đối tượng Loans
+            loan.setDetails(createDetailsList(loan, order.getDetails()));
+            String result = apiClient.validateQuantity(getLoanQuantity(loan.getDetails()));
+
+            if (result == null) {
+                loansRepository.save(loan);
+                dto.setMessage("Thành công");
+                dto.setSuccess(true);
+            } else {
+                dto.setMessage(result);
+                dto.setSuccess(false);
+            }
+        } catch (Exception e) {
+            // Ghi log lỗi ở đây nếu cần
+            dto.setMessage(e.getMessage());
+            dto.setSuccess(false);
+        }
+        return dto;
+    }
+
+    List<LoanDetails> createDetailsList(Loans loan, List<LoanDetailsDto> detailsDto) {
+        List<LoanDetails> details = new ArrayList<>();
+        for (LoanDetailsDto dto : detailsDto) {
+            LoanDetails detail = detailsMapper.toEntity(dto);
+            detail.setLoans(loan); // Thiết lập quan hệ với Loans
+            details.add(detail);
+        }
+        return details;
+    }
 }

@@ -14,7 +14,6 @@ public class HardwareDto implements Serializable {
     String description;
     String assetCode;
     String serialNumber;
-    String type;
     String location;
     Long purchaseValue;
     Date purchaseDate;

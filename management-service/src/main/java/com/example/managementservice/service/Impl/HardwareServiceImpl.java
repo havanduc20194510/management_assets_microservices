@@ -91,8 +91,7 @@ public class HardwareServiceImpl implements HardwareService {
             hardware.setSerialNumber(hardwareDTO.getSerialNumber());
             hardware.setQuantity(hardwareDTO.getQuantity());
             hardware.setPurchaseValue(hardwareDTO.getPurchaseValue());
-            Hardware updatedHardware = hardwareRepository.save(hardware);
-            HardwareDto hardwareDTO1 = hardwareMapper.toDto(updatedHardware);
+            hardwareRepository.save(hardware);
             return "Update successfully";
         } else {
             return "doesn't exist";

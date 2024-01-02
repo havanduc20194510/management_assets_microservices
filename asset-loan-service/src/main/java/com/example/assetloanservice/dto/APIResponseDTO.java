@@ -11,5 +11,4 @@ import lombok.Setter;
 @NoArgsConstructor
 public class APIResponseDTO {
     private LoansDto loans;
-    private HardwareDto hardware;
 }
