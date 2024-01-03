@@ -1,6 +1,8 @@
 package com.example.assetloanservice.dto;
 
 import com.example.assetloanservice.Enum.LoanStatus;
+import com.example.assetloanservice.entity.LoanDetails;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -18,5 +20,5 @@ public class LoansDto implements Serializable {
     Date dueDate;
     Date returnDate;
     LoanStatus status;
-    List<LoanDetailsDto> details;
+    List<LoanDetails> details;
 }

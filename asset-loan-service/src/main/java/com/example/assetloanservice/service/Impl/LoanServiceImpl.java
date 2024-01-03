@@ -2,12 +2,10 @@ package com.example.assetloanservice.service.Impl;
 
 import com.example.assetloanservice.Enum.LoanStatus;
 import com.example.assetloanservice.dto.APIResponseDTO;
-import com.example.assetloanservice.dto.LoanDetailsDto;
 import com.example.assetloanservice.dto.LoanResponseDto;
 import com.example.assetloanservice.dto.LoansDto;
 import com.example.assetloanservice.entity.LoanDetails;
 import com.example.assetloanservice.entity.Loans;
-import com.example.assetloanservice.mapper.Details.LoanDetailsMapper;
 import com.example.assetloanservice.mapper.LoansMapper;
 import com.example.assetloanservice.repository.LoanDetailsRepository;
 import com.example.assetloanservice.repository.LoansRepository;
@@ -21,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +30,6 @@ public class LoanServiceImpl implements LoanService {
     private LoansRepository loansRepository;
     private LoansMapper loansMapper;
     private APIClient apiClient;
-    private LoanDetailsMapper detailsMapper;
 
 
     @Override
@@ -54,7 +50,8 @@ public class LoanServiceImpl implements LoanService {
         Page<Loans> loansPage = loansRepository.findAll(pageable);
 
         List<LoansDto> loanDTOs = loansPage.getContent().stream()
-                .filter(loans -> loans.getStatus().equals(LoanStatus.APPROVED))
+                .filter(loans -> loans.getStatus() != null &&
+                        loans.getStatus().equals(LoanStatus.APPROVED))
                 .map(loans -> loansMapper.toDto(loans))
                 .toList();
         return new PageImpl<>(loanDTOs, pageable, loansPage.getTotalElements());
@@ -67,7 +64,8 @@ public class LoanServiceImpl implements LoanService {
         Page<Loans> loansPage = loansRepository.findAll(pageable);
 
         List<LoansDto> loanDTOs = loansPage.getContent().stream()
-                .filter(loans -> loans.getStatus().equals(LoanStatus.RETURNED))
+                .filter(loans -> loans.getStatus() != null &&
+                        loans.getStatus().equals(LoanStatus.RETURNED))
                 .map(loans -> loansMapper.toDto(loans))
                 .toList();
         return new PageImpl<>(loanDTOs, pageable, loansPage.getTotalElements());
@@ -121,40 +119,17 @@ public class LoanServiceImpl implements LoanService {
         }
         return loanQuantityMap;
     }
-    /*
-    @Override
-    public LoanResponseDto createAnOrder(LoansDto order) {
-        try {
-            Loans loan = loansMapper.toEntity(order);
-            List<LoanDetails> detailsList = createDetailsList(order.getDetails());
-            String result = apiClient.validateQuantity(getLoanQuantity(detailsList));
-            LoanResponseDto dto = new LoanResponseDto();
-            if (result == null) {
-                loan.setDetails(detailsList);
-                loansRepository.save(loan);
-                dto.setMessage("thanh cong");
-                dto.setSuccess(true);
-            } else {
-                dto.setMessage(result);
-                dto.setSuccess(false);
-            }
-            return dto;
-        } catch (Exception e) {
-            LoanResponseDto dto = new LoanResponseDto();
-            dto.setMessage(e.getMessage());
-            dto.setSuccess(false);
-            return dto;
-        }
-    }
-    */
     @Override
     public LoanResponseDto createAnOrder(LoansDto order) {
         LoanResponseDto dto = new LoanResponseDto();
         try {
             Loans loan = loansMapper.toEntity(order);
             // Chú ý: Bạn cần tạo danh sách LoanDetails sau khi đã có đối tượng Loans
-            loan.setDetails(createDetailsList(loan, order.getDetails()));
+            loan.setDetails(order.getDetails());
             loan.setStatus(LoanStatus.PENDING);
+            for (LoanDetails detail : loan.getDetails()) {
+                detail.setLoans(loan); // Thiết lập quan hệ với Loans
+            }
             String result = apiClient.validateQuantity(getLoanQuantity(loan.getDetails()));
 
             if (result == null) {
@@ -173,13 +148,4 @@ public class LoanServiceImpl implements LoanService {
         return dto;
     }
 
-    List<LoanDetails> createDetailsList(Loans loan, List<LoanDetailsDto> detailsDto) {
-        List<LoanDetails> details = new ArrayList<>();
-        for (LoanDetailsDto dto : detailsDto) {
-            LoanDetails detail = detailsMapper.toEntity(dto);
-            detail.setLoans(loan); // Thiết lập quan hệ với Loans
-            details.add(detail);
-        }
-        return details;
-    }
 }

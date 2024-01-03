@@ -8,6 +8,11 @@ import org.mapstruct.*;
 public interface LoansMapper {
     Loans toEntity(LoansDto loansDto);
 
+    @AfterMapping
+    default void linkDetails(@MappingTarget Loans loans) {
+        loans.getDetails().forEach(detail -> detail.setLoans(loans));
+    }
+
     LoansDto toDto(Loans loans);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
