@@ -17,4 +17,5 @@ public interface LoanService {
     String rejectOrder(Long id);
     String rejectAll();
     LoanResponseDto createAnOrder(LoansDto order);
+    LoansDto ApproveLoanOrder(Long loanId);
 }

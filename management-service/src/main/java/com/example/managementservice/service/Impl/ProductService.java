@@ -1,13 +1,11 @@
 package com.example.managementservice.service.Impl;
 
 import com.example.managementservice.dto.AssetDTO;
-import com.example.managementservice.dto.HardwareDto;
 import com.example.managementservice.entity.Hardware;
 import com.example.managementservice.entity.Software;
 import com.example.managementservice.mapper.AssetMapper;
 import com.example.managementservice.repository.HardwareRepository;
 import com.example.managementservice.repository.SoftwareRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
