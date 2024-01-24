@@ -7,13 +7,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-public class LoanPublisherConfig {
-    @Value("${spring.kafka.topic.loan-approved.name}")
-    private String loanApprovedTopic;
+public class InventoryCheckConsumer {
+    @Value("${spring.kafka.topic.inventory-checked.name}")
+    private String inventoryCheckedTopic;
 
     @Bean
-    public NewTopic loanApprovedTopic() {
-        return TopicBuilder.name(loanApprovedTopic)
+    public NewTopic inventoryCheckedTopic() {
+        return TopicBuilder.name(inventoryCheckedTopic)
                 .build();
     }
 }

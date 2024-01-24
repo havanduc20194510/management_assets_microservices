@@ -40,9 +40,9 @@ public class LoanServiceImpl implements LoanService {
     private LoansRepository loansRepository;
     private LoansMapper loansMapper;
     private APIClient apiClient;
-    private final NewTopic topic;
+    private final NewTopic loanApprovedTopic;
     private static final Logger LOGGER = LoggerFactory.getLogger(LoanServiceImpl.class);
-    private final KafkaTemplate<String, LoanApprovedEvent> kafkaTemplate;
+    private KafkaTemplate<String, LoanApprovedEvent> kafkaTemplate;
 
 
     @Override
@@ -105,15 +105,7 @@ public class LoanServiceImpl implements LoanService {
                 });
         return "REJECTED ALL";
     }
-
-    /* approve Order
-    set trạng thái đơn là Approve,
-    trừ số lượng sản phẩm trong kho
-    đã có API để check số lượng lấy API đó để làm điều kiện duyệt
-    lưu lại tên người duyệt
-     */
     // mô hình thiết kế SAGA Choreography để xử lý một transaction
-
     // admin side only
 
     /*
@@ -183,31 +175,33 @@ public class LoanServiceImpl implements LoanService {
     public LoansDto ApproveLoanOrder(Long loanId) {
         String transactionId = UUID.randomUUID().toString();
 
-        Loans loans;
         try {
-            loans = loansRepository.findById(loanId).get();
+            Loans loans = loansRepository.findById(loanId).get();
             // PUBLISH event lên kafka topic để MS xử lý kho
             LoanApprovedEvent event = new LoanApprovedEvent();
-            event.setDetails(getLoanDetailsDto(loans.getDetails()));
+            event.setDetails(getLoanDetailsDto(loans.getDetails(), loanId));
             event.setStatus(EventStatus.PENDING_INVENTORY);
             LOGGER.info(String.format("ApproveLoanOrder => %s", event));
             Message<LoanApprovedEvent> message = MessageBuilder
                     .withPayload(event)
-                    .setHeader(KafkaHeaders.TOPIC, topic.name())
+                    .setHeader(KafkaHeaders.TOPIC, loanApprovedTopic.name())
                     .setHeader("transaction_id", transactionId)
                     .build();
             kafkaTemplate.send(message);
-
+            return loansMapper.toDto(loans);
         } catch (Exception e) {
             LOGGER.error("Error publishing event, transaction_id=" + transactionId, e);
             throw e;
         }
-        return loansMapper.toDto(loans);
+    }
+
+    private void updateLoanOrder() {
+
     }
     
-    public LoanDetailsDto getLoanDetailsDto(List<LoanDetails> loanDetailsList) {
+    public LoanDetailsDto getLoanDetailsDto(List<LoanDetails> loanDetailsList, Long loanId) {
         LoanDetailsDto detailsDto = new LoanDetailsDto();
-
+        detailsDto.setLoanId(loanId);
         if (loanDetailsList.size() == 1) {
             LoanDetails detail = loanDetailsList.get(0);
             LoanHardwareDto hardwareDto = new LoanHardwareDto();

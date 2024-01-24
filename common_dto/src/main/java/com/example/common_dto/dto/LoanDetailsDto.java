@@ -11,5 +11,6 @@ import java.util.List;
 @Getter
 @Setter
 public class LoanDetailsDto {
+    Long loanId;
     List<LoanHardwareDto> products;
 }

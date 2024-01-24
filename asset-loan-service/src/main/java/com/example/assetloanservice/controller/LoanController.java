@@ -70,5 +70,9 @@ public class LoanController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-
+    @PutMapping("/approve/{id}")
+    public ResponseEntity<LoansDto> approveAnOrder(@PathVariable("id") Long id) {
+        LoansDto dto = loanService.ApproveLoanOrder(id);
+        return ResponseEntity.ok().body(dto);
+    }
 }
