@@ -9,3 +9,6 @@ InventoryCheckedEvent dưới dạng ![420709025_915210426845397_420789001367882
 
 nếu không có sản phẩm nào vượt quá số lượng trong kho list sản phẩm của InventoryCheckedEvent sẽ trả về null hoặc ds rỗng
 ngược lại nếu có thì trả về danh sách sản phẩm đó 
+
+
+ở lần commit tới sẽ set lại trạng thái LoanApprovedEvent và hủy đơn mượn, kèm API để ng dùng trả đồ 
