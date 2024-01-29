@@ -74,10 +74,11 @@ public class HardwareServiceImpl implements HardwareService {
 
     @Override
     public List<HardwareDto> getHardwareByManufacturer(String name) {
-        List<Optional<Hardware>> list = Collections.singletonList(hardwareRepository.findByManufacturer(name));
-        return list.stream()
-                .map(hardware -> hardwareMapper.toDto(hardware.get()))
-                .collect(Collectors.toList());
+        return hardwareRepository.findByManufacturer(name)
+                .stream()
+                .map(hardware -> hardwareMapper.toDto(hardware))
+                .toList()
+                ;
     }
 
     @Override
